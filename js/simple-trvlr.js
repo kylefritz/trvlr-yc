@@ -1,4 +1,6 @@
 $(function(){
+  
+  window.orientation=0;
 
   loadDeck=function(deckName,deckLength){
      _(_.range($('.'+deckName+" img").length,deckLength)).each(function(sliden){
@@ -7,6 +9,12 @@ $(function(){
                    .hide()
                    .appendTo('.'+deckName);
      });
+     if(deckName=="screens"){
+        $('.screens img').batchImageLoad({imageLoadedCallback:
+          function(){
+            loadDeck('slides',13);
+        }});
+     }
   }
   wireDeck=function(deckName,deckLength){
    var slide=0;
@@ -21,7 +29,6 @@ $(function(){
       if(slide<0){
         slide=deckLength-1;
       }
-      console.log(deckName,slide);
       $('.'+deckName+' .s'+slide).show();
       $('.instruct').fadeOut();
     }
@@ -30,7 +37,6 @@ $(function(){
     }).addSwipeEvents()
       .bind('swipeleft',function(){deltSlide(+1)})
       .bind('swiperight',function(){deltSlide(-1)});
-      
   }
 
   wireDeck('slides',13);
