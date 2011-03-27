@@ -1,7 +1,4 @@
 $(function(){
-  
-  window.orientation=0;
-
   loadDeck=function(deckName,deckLength){
      _(_.range($('.'+deckName+" img").length,deckLength)).each(function(sliden){
         $('<img />').attr('src',deckName+'/'+sliden+'.png') 
