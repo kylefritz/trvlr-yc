@@ -1,36 +1,35 @@
 $(function(){
 
-  nslides=13;
-  isSlides=true;
-
   wireDeck=function(deckName,deckLength){
-   var slide=1;
+   //insert slides
+   _(_.range($('.'+deckName+" img").length,deckLength)).each(function(sliden){
+      $('<img />').attr('src',deckName+'/'+sliden+'.png') 
+                 .addClass('s'+sliden)
+                 .hide()
+                 .appendTo('.'+deckName);
+   });
+   var slide=0;
    var deltSlide=function(d){
       window.scrollTo(0, 1);
 
       $('.'+deckName+' .s'+slide).hide();
       slide+=d;
-      if(slide>deckLength){
-        slide=1;
+      if(slide>=deckLength){
+        slide=0;
       }
-      if(slide<1){
-        slide=deckLength;
+      if(slide<0){
+        slide=deckLength-1;
       }
+      console.log(deckName,slide);
       $('.'+deckName+' .s'+slide).show();
-
     }
-   /*
-     $('.'+deckName+' img').click(function(){
-      deltSlide(1);   
-      return false;
-     }); 
-     */
-     $('.'+deckName).click(function(evt){
+    $('.'+deckName).click(function(evt){
        deltSlide( evt.pageX<($(window).width()/2)?-1:+1);
         $('.instruct').fadeOut();
-     });
+    });
   }
-  wireDeck('slides',13);//its one indexed
+
+  wireDeck('slides',13);
   wireDeck('screens',8);
   
   syncOrientation=function(){
