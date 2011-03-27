@@ -1,38 +1,49 @@
 $(function(){
-  loadDeck=function(deckName,deckLength){
-     _(_.range($('.'+deckName+" img").length,deckLength)).each(function(sliden){
-        $('<img />').attr('src',deckName+'/'+sliden+'.png') 
-                   .addClass('s'+sliden)
-                   .hide()
-                   .appendTo('.'+deckName);
+  slides={deckName:'slides',deckLength:13,width:800,height:600};
+  screens={deckName:'screens',deckLength:8,height:418,width:320};
+
+  loadDeck=function(op){
+     _(_.range($('.'+op.deckName+" img").length,op.deckLength)).each(
+       function(sliden){
+         var $holder = $('<div ><p>Spacetravlr<br/>loading ('+sliden+') ...</p></div>')
+                           .addClass('s'+sliden)
+                           .appendTo('.'+op.deckName);
+          var $img=$('<img />').attr({height:op.height});
+          $img.load(function(){
+                 $holder.html($img.get(0));
+                    if(op.deckName=="screens"&&sliden==op.deckLength-1){
+                      $('.screens img').batchImageLoad({
+                        imageLoadedCallback: function(){
+                          loadDeck('slides',13);
+                      }});
+                    }
+                })
+               .attr('src',op.deckName+'/'+sliden+'.png');
+          if(sliden>0){
+            $holder.hide();
+          }
      });
-     if(deckName=="screens"){
-        $('.screens img').batchImageLoad({imageLoadedCallback:
-          function(){
-            loadDeck('slides',13);
-        }});
-     }
   }
-  wireDeck=function(deckName,deckLength){
+  wireDeck=function(op){
    var slide=0;
    var deltSlide=function(d){
       window.scrollTo(0, 1);
 
-      $('.'+deckName+' .s'+slide).hide();
+      $('.'+op.deckName+' .s'+slide).hide();
       slide+=d;
-      if(slide>=deckLength){
+      if(slide>=op.deckLength){
         slide=0;
       }
       if(slide<0){
-        slide=deckLength-1;
+        slide=op.deckLength-1;
       }
-      $('.'+deckName+' .s'+slide).show();
+      $('.'+op.deckName+' .s'+slide).show();
       if(slide>0){
         $('.instruct').fadeOut();
       }
     }
     deltSlide(0);
-    $('.'+deckName).click(function(evt){
+    $('.'+op.deckName).click(function(evt){
        deltSlide( evt.pageX<($(window).width()/2)?-1:+1);
     }).addSwipeEvents()
       .bind('swipeleft',function(){deltSlide(+1)})
@@ -42,15 +53,15 @@ $(function(){
   syncOrientation=function(){
      window.scrollTo(0, 1);
      if(typeof(window.orientation)=="undefined"){
-       loadDeck('slides',13);
+       loadDeck(slides);
        return;
      }
      var isVert=window.orientation%180==0;
      if(isVert){
-       loadDeck('screens',8);
+       loadDeck(screens);
         $('.instruct').remove();
      }else{
-       loadDeck('slides',13);
+       loadDeck(slides);
      }
      var sel = (isVert)?"slides":"screens";
      $('.slides,.screens').show();
@@ -68,8 +79,8 @@ $(function(){
   window.onorientationchange=syncOrientation;
   syncOrientation();
  
-  wireDeck('slides',13);
-  wireDeck('screens',8);
+  wireDeck(slides);
+  wireDeck(screens);
    $(window).resize(syncOrientation);
 
   fakeOrientation=function(deg){
