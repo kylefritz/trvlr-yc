@@ -1,17 +1,23 @@
 $(function(){
   slides={deckName:'slides',deckLength:13,width:800,height:600};
   screens={deckName:'screens',deckLength:8,height:418,width:320};
-
-  loadDeck=function(op){
-     _(_.range($('.'+op.deckName+" img").length,op.deckLength)).each(
+  
+  deck = Backbone.Model.extend({
+    initialize:function(){
+    }
+    , load:function(){
+      var name=this.get('deckName');
+      var length=this.get('deckLength');
+      _(_.range($('.'+name+" img").length,length)).each(
        function(sliden){
          var $holder = $('<div ><p>Spacetravlr<br/>loading ('+sliden+') ...</p></div>')
                            .addClass('s'+sliden)
-                           .appendTo('.'+op.deckName);
+                           .appendTo('.'+name);
           var $img=$('<img />').attr({height:op.height});
           $img.load(function(){
                  $holder.html($img.get(0));
                     if(op.deckName=="screens"&&sliden==op.deckLength-1){
+                      //todo this should be a callback
                       $('.screens img').batchImageLoad({
                         imageLoadedCallback: function(){
                           loadDeck('slides',13);
@@ -22,33 +28,43 @@ $(function(){
           if(sliden>0){
             $holder.hide();
           }
-     });
-  }
-  wireDeck=function(op){
-   var slide=0;
-   var deltSlide=function(d){
-      window.scrollTo(0, 1);
+      });
 
-      $('.'+op.deckName+' .s'+slide).hide();
-      slide+=d;
-      if(slide>=op.deckLength){
-        slide=0;
-      }
-      if(slide<0){
-        slide=op.deckLength-1;
-      }
-      $('.'+op.deckName+' .s'+slide).show();
-      if(slide>0){
-        $('.instruct').fadeOut();
-      }
+      //wire
+      this.deltSlide(0);
+      $('.'+name).click(_.bind(function(evt){
+         this.deltSlide( evt.pageX<($(window).width()/2)?-1:+1);
+      },this))
+        .addSwipeEvents()
+        .bind('swipeleft',_.bind(function(){this.deltSlide(+1)},this))
+        .bind('swiperight',_.bind(function(){this.deltSlide(-1)},this));
     }
-    deltSlide(0);
-    $('.'+op.deckName).click(function(evt){
-       deltSlide( evt.pageX<($(window).width()/2)?-1:+1);
-    }).addSwipeEvents()
-      .bind('swipeleft',function(){deltSlide(+1)})
-      .bind('swiperight',function(){deltSlide(-1)});
-  }
+    , deltSlide:function(n){
+        window.scrollTo(0, 1);
+        var length=this.get('deckLength');
+        slide+=d;
+        if(slide>=length){
+          slide=0;
+        }
+        if(slide<0){
+          slide=length-1;
+        }
+    
+        this.set({slide:slide});
+        this.setSlide();
+    }
+    , setSlide:function(){
+        var slide=this.get("slide");
+        var name=this.get('deckName');
+   
+        //hide all
+        $('.'+name+' > div').hide();
+        $('.'+name+' .s'+slide).show();
+        if(slide>0){
+          $('.instruct').fadeOut();
+        }
+    }
+   });
 
   syncOrientation=function(){
      window.scrollTo(0, 1);
@@ -79,9 +95,7 @@ $(function(){
   window.onorientationchange=syncOrientation;
   syncOrientation();
  
-  wireDeck(slides);
-  wireDeck(screens);
-   $(window).resize(syncOrientation);
+  $(window).resize(syncOrientation);
 
   fakeOrientation=function(deg){
     window.orientation=deg;
