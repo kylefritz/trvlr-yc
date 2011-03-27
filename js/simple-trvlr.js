@@ -42,6 +42,7 @@ $(function(){
      var isVert=window.orientation%180==0;
      if(isVert){
        loadDeck('screens',8);
+        $('.instruct').remove();
      }else{
        loadDeck('slides',13);
      }
