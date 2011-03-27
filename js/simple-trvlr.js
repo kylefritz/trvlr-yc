@@ -27,8 +27,11 @@ $(function(){
         slide=deckLength-1;
       }
       $('.'+deckName+' .s'+slide).show();
-      $('.instruct').fadeOut();
+      if(slide>0){
+        $('.instruct').fadeOut();
+      }
     }
+    deltSlide(0);
     $('.'+deckName).click(function(evt){
        deltSlide( evt.pageX<($(window).width()/2)?-1:+1);
     }).addSwipeEvents()
@@ -36,9 +39,6 @@ $(function(){
       .bind('swiperight',function(){deltSlide(-1)});
   }
 
-  wireDeck('slides',13);
-  wireDeck('screens',8);
-  
   syncOrientation=function(){
      window.scrollTo(0, 1);
      if(typeof(window.orientation)=="undefined"){
@@ -67,7 +67,11 @@ $(function(){
 
   window.onorientationchange=syncOrientation;
   syncOrientation();
-  $(window).resize(syncOrientation);
+ 
+  wireDeck('slides',13);
+  wireDeck('screens',8);
+   $(window).resize(syncOrientation);
+
   fakeOrientation=function(deg){
     window.orientation=deg;
     syncOrientation();
