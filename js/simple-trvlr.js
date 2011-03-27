@@ -23,11 +23,14 @@ $(function(){
       }
       console.log(deckName,slide);
       $('.'+deckName+' .s'+slide).show();
+      $('.instruct').fadeOut();
     }
     $('.'+deckName).click(function(evt){
        deltSlide( evt.pageX<($(window).width()/2)?-1:+1);
-        $('.instruct').fadeOut();
-    });
+    }).addSwipeEvents()
+      .bind('swipeleft',function(){deltSlide(+1)})
+      .bind('swiperight',function(){deltSlide(-1)});
+      
   }
 
   wireDeck('slides',13);
