@@ -1,21 +1,21 @@
-  SlideshowController=Backbone.Controller.extend({
-    routes:{
-      "":"bootstrap"
-      ,"slides/:number":"slide"
-      ,"screens/:number":"screen"
-    }
-    ,bootstrap:function(){
-       slideshow.view.orientationChange();
-    }
-    ,slide:function(number){
-       slideshow.set({showing:"slides"})
-       slideshow.Slides.set({slide:parseInt(number)});
-    }
-    ,screen:function(number){
-       slideshow.set({showing:"screens"})
-       slideshow.Screens.set({slide:parseInt(number)});
-    }
-  });
+SlideshowController=Backbone.Controller.extend({
+  routes:{
+    "":"bootstrap"
+    ,"slides/:number":"slide"
+    ,"screens/:number":"screen"
+  }
+  ,bootstrap:function(){
+     slideshow.view.orientationChange();
+  }
+  ,slide:function(number){
+     slideshow.set({showing:"slides"})
+     slideshow.Slides.set({slide:parseInt(number)});
+  }
+  ,screen:function(number){
+     slideshow.set({showing:"screens"})
+     slideshow.Screens.set({slide:parseInt(number)});
+  }
+});
 Deck = Backbone.Model.extend({
     defaults:{
       length:0
@@ -23,21 +23,31 @@ Deck = Backbone.Model.extend({
       ,slide:0
       ,loaded:false
       ,orientation:"horizontal"
+      ,nSlidesLoaded:0
+      ,allLoaded:false
     }
     ,initialize:function(){
-        _(this).bindAll("deltSlide");
+        _(this).bindAll("deltSlide","slideLoaded");
         this.Slides=new Slides;
         _(_.range(this.get("length"))).each(_.bind(function(n){
-          var slide = new Slide({number:n})
+          var slide = new Slide({number:n});
           slide.Deck=this;
+          slide.bind('change:loaded',this.slideLoaded);
           var view=new SlideView({model:slide});
           this.Slides.add(slide);
         },this));
     }
+    , slideLoaded:function(){
+      var nloaded=this.get("nSlidesLoaded")+1
+      this.set({nSlidesLoaded:nloaded});
+      if(nloaded==this.get("length")){
+        console.log(this.get("name"),'loaded');
+        this.set({allLoaded:true});
+      }
+    }
     , deltSlide:function(n){
         var length=this.get('length');
         var slide=this.get('slide');
-        console.log(this,slide,length,n);
         slide+=n;
         if(slide>=length){
           slide=0;
@@ -100,24 +110,26 @@ SlideView = Backbone.View.extend({
     //TODO: not sure this belongs here
     //slideshow.bind("change:orientation",this.resize);
     
-    //$(window).resize(this.resize);
+    $(window).resize(this.resize);
   }
   ,toggleVisible:function(){
     if(this.model.Deck.get("slide")==this.model.get("number")){
       $(this.el).show();
+      this.resize();
     }else{
       $(this.el).hide();
     }
-
   }
   ,resize:function(){
+    if(this.model.Deck.get("slide")==this.model.get("number")){
      var targetH=0;
      if(navigator.userAgent.match(/iphone/i)){
         targetH=isVert?416:268;
      }else{
-        targetH=$('body').height();
+        targetH=$(window).height();
      }
      this.$('img').css({height:targetH});
+    }
   }
   ,render:function(){
     $(this.el).append(
@@ -130,10 +142,35 @@ SlideView = Backbone.View.extend({
     $img.load(_.bind(function(){
         $(this.el).html($img);
         this.model.set({loaded:true});
+        this.toggleVisible();
       },this)).attr('src',src);
+
+    this.toggleVisible();
     return this;
   }
 }); 
+InstructionsView=Backbone.View.extend({
+  className:"instruct"
+  ,initialize:function(){
+    _(this).bindAll("render",'updateVisible');
+    this.model.bind('change:showing',this.updateVisible);
+    this.model.Slides.bind('change:slide',this.updateVisible);
+  }
+  ,updateVisible:function(){
+    if(this.model.Slides.get("slide")==0
+      && this.model.get("showing")=="slides"){
+        $(this.el).show();
+    }else{
+        $(this.el).hide();
+    }
+  }
+  ,render:function(){
+      $(this.el).html("<p>click to the right to advance</p>"+
+        "<p>use mobile device to see product screens</p>");
+      this.updateVisible();
+      return this;
+  }
+})
 Slideshow=Backbone.Model.extend({
   defaults:{
     orientation:"horizontal"
@@ -148,6 +185,12 @@ Slideshow=Backbone.Model.extend({
     this.Screens=new Deck({name:'screens',length:8,height:418,width:320});
     this.ScreensView=new DeckView({model:this.Screens});
 
+    //wire together
+    this.Slides.bind('change:allLoaded',_.bind(function(){this.ScreensView.load()},this));
+    this.Screens.bind('change:allLoaded',_.bind(function(){this.SlidesView.load()},this));
+
+    this.Instructions=new InstructionsView({model:this});
+
     var view = new SlideshowView({model:this});
     $('body').html(view.render().el);
     new SlideshowController();
@@ -158,7 +201,6 @@ SlideshowView=Backbone.View.extend({
   className:"slideshow"
   ,initialize:function(){
     window.onorientationchange=this.orientationChange;
-    $(window).resize(_.bind(this.orientationChange,this));
     _(this).bindAll("orientationChange","render");
     this.model.view=this;
   }
@@ -168,16 +210,17 @@ SlideshowView=Backbone.View.extend({
                         || window.orientation%180!=0)
                       ? "horizontal"
                       : "vertical";
-     this.model.set({orientation:orientation});
      if(orientation=="horizontal"){
        window.location="#slides/"+this.model.Slides.get('slide');;
      }else{
        window.location="#screens/"+this.model.Screens.get('slide');
      }
+     this.model.set({orientation:orientation});
   }
   , render:function(){
     $(this.el).append(this.model.Slides.view.render().el)
               .append(this.model.Screens.view.render().el)
+              .append(this.model.Instructions.render().el)
     return this;
   }
 });
