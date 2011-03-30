@@ -41,7 +41,6 @@ Deck = Backbone.Model.extend({
       var nloaded=this.get("nSlidesLoaded")+1
       this.set({nSlidesLoaded:nloaded});
       if(nloaded==this.get("length")){
-        console.log(this.get("name"),'loaded');
         this.set({allLoaded:true});
       }
     }
@@ -107,9 +106,7 @@ SlideView = Backbone.View.extend({
     this.model.view=this;
     _(this).bindAll('toggleVisible','resize','render');
     this.model.Deck.bind("change:slide",this.toggleVisible);
-    //TODO: not sure this belongs here
-    //slideshow.bind("change:orientation",this.resize);
-    
+    slideshow.bind("change:orientation",this.resize);
     $(window).resize(this.resize);
   }
   ,toggleVisible:function(){
@@ -124,7 +121,7 @@ SlideView = Backbone.View.extend({
     if(this.model.Deck.get("slide")==this.model.get("number")){
      var targetH=0;
      if(navigator.userAgent.match(/iphone/i)){
-        targetH=isVert?416:268;
+        targetH=slideshow.get("orientation")=="vertical"?416:268;
      }else{
         targetH=$(window).height();
      }
@@ -143,6 +140,7 @@ SlideView = Backbone.View.extend({
         $(this.el).html($img);
         this.model.set({loaded:true});
         this.toggleVisible();
+        this.resize();
       },this)).attr('src',src);
 
     this.toggleVisible();
@@ -165,8 +163,10 @@ InstructionsView=Backbone.View.extend({
     }
   }
   ,render:function(){
+      if(!navigator.userAgent.match(/iphone|android/i)){
       $(this.el).html("<p>click to the right to advance</p>"+
         "<p>use mobile device to see product screens</p>");
+      }
       this.updateVisible();
       return this;
   }
@@ -201,21 +201,26 @@ SlideshowView=Backbone.View.extend({
   className:"slideshow"
   ,initialize:function(){
     window.onorientationchange=_.bind(this.orientationChange,this);
-    _(this).bindAll("orientationChange","render");
+    _(this).bindAll("parseOrientation","orientationChange","render");
     this.model.view=this;
+    this.parseOrientation();
   }
-  , orientationChange:function(){
-     window.scrollTo(0, 1);
-     var orientation= (typeof(window.orientation)=="undefined"
+  , parseOrientation:function(){
+    var orientation= (typeof(window.orientation)=="undefined"
                         || window.orientation%180!=0)
                       ? "horizontal"
                       : "vertical";
-     if(orientation=="horizontal"){
+     this.model.set({orientation:orientation});
+  }
+  , orientationChange:function(){
+     this.parseOrientation();
+     if(this.model.get("orientation")=="horizontal"){
        window.location="#slides/"+this.model.Slides.get('slide');;
+       window.scrollTo(0, 1);
      }else{
        window.location="#screens/"+this.model.Screens.get('slide');
+       setTimeout(scrollTo, 0, 0, 1);
      }
-     this.model.set({orientation:orientation});
   }
   , render:function(){
     $(this.el).append(this.model.Slides.view.render().el)
