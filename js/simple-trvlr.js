@@ -200,7 +200,7 @@ Slideshow=Backbone.Model.extend({
 SlideshowView=Backbone.View.extend({
   className:"slideshow"
   ,initialize:function(){
-    window.onorientationchange=this.orientationChange;
+    window.onorientationchange=_.bind(this.orientationChange,this);
     _(this).bindAll("orientationChange","render");
     this.model.view=this;
   }
@@ -233,7 +233,7 @@ $(function(){
 
 _fakeOrientation=function(deg){
     window.orientation=deg;
-    showView.orientationChange();
+    slideshow.view.orientationChange();
 }
 
 window.addEventListener('load', function(){
