@@ -1,19 +1,19 @@
   SlideshowController=Backbone.Controller.extend({
     routes:{
       "":"bootstrap"
-      ,"slide/:number":"slide"
-      ,"screen/:number":"screen"
+      ,"slides/:number":"slide"
+      ,"screens/:number":"screen"
     }
     ,bootstrap:function(){
        slideshow.view.orientationChange();
     }
     ,slide:function(number){
        slideshow.set({showing:"slides"})
-       slideshow.Slides.set({slide:number});
+       slideshow.Slides.set({slide:parseInt(number)});
     }
     ,screen:function(number){
        slideshow.set({showing:"screens"})
-       slideshow.Screens.set({slide:number});
+       slideshow.Screens.set({slide:parseInt(number)});
     }
   });
 Deck = Backbone.Model.extend({
@@ -25,6 +25,7 @@ Deck = Backbone.Model.extend({
       ,orientation:"horizontal"
     }
     ,initialize:function(){
+        _(this).bindAll("deltSlide");
         this.Slides=new Slides;
         _(_.range(this.get("length"))).each(_.bind(function(n){
           var slide = new Slide({number:n})
@@ -34,26 +35,27 @@ Deck = Backbone.Model.extend({
         },this));
     }
     , deltSlide:function(n){
-        window.scrollTo(0, 1);
         var length=this.get('length');
-        slide+=d;
+        var slide=this.get('slide');
+        console.log(this,slide,length,n);
+        slide+=n;
         if(slide>=length){
           slide=0;
         }
         if(slide<0){
           slide=length-1;
         }
-        this.set({slide:slide});
+        this.set({slide:slide})
+        window.location='#'+this.get('name')+'/'+slide;
     }
    });
 DeckView=Backbone.View.extend({
-  events:{
-    "click":"changeSlide"
+  className:"deck"
+  , events:{
   }
   ,initialize:function(){
     this.model.view=this;
     this.model.bind("change:slide",this.scrollUp);
-    this.className=this.model.get("name");
     _(this).bindAll('scrollUp','load','render');
     slideshow.bind('change:showing',this.render);
   }
@@ -63,9 +65,10 @@ DeckView=Backbone.View.extend({
   ,load:function(){
     if(this.model.get("loaded")) return;
 
-    this.model.Slides.each(function(slide){
+    this.model.Slides.each(_.bind(function(slide){
       $(this.el).append(slide.view.render().el);
-    });
+    },this));
+
     $(this.el)
       .addSwipeEvents()
       .bind('swipeleft',_.bind(function(){this.model.deltSlide(+1)},this))
@@ -76,6 +79,7 @@ DeckView=Backbone.View.extend({
     this.model.set({loaded:true});
   }
   ,render:function(){
+    $(this.el).addClass(this.model.get("name"));
     if(slideshow.get("showing")==this.model.get("name")){
       $(this.el).show();
       this.load();
@@ -91,11 +95,12 @@ SlideView = Backbone.View.extend({
   className:"slide"
   ,initialize:function(){
     this.model.view=this;
+    _(this).bindAll('toggleVisible','resize','render');
     this.model.Deck.bind("change:slide",this.toggleVisible);
     //TODO: not sure this belongs here
     //slideshow.bind("change:orientation",this.resize);
+    
     //$(window).resize(this.resize);
-    _(this).bindAll('toggleVisible','resize','render');
   }
   ,toggleVisible:function(){
     if(this.model.Deck.get("slide")==this.model.get("number")){
@@ -103,6 +108,7 @@ SlideView = Backbone.View.extend({
     }else{
       $(this.el).hide();
     }
+
   }
   ,resize:function(){
      var targetH=0;
@@ -118,16 +124,20 @@ SlideView = Backbone.View.extend({
        $('<p>Spacetravlr<br/>loading ('+this.model.get("number")+') ...</p>') 
       );
     var $img=$('<img />').attr({height:this.model.get("height")});
-    $img.load(function(){
+    var src=this.model.Deck.get("name")+
+            '/'+this.model.get("number")+
+            '.png';
+    $img.load(_.bind(function(){
         $(this.el).html($img);
         this.model.set({loaded:true});
-      }).attr('src',op.deckName+'/'+sliden+'.png');
+      },this)).attr('src',src);
     return this;
   }
 }); 
 Slideshow=Backbone.Model.extend({
   defaults:{
     orientation:"horizontal"
+    , showing:"neither"
   }
   ,initialize:function(){
     _(this).bindAll("init");
@@ -140,8 +150,8 @@ Slideshow=Backbone.Model.extend({
 
     var view = new SlideshowView({model:this});
     $('body').html(view.render().el);
-    //new SlideshowController();
-    //Backbone.history.start();
+    new SlideshowController();
+    Backbone.history.start();
   }
 });
 SlideshowView=Backbone.View.extend({
@@ -160,14 +170,14 @@ SlideshowView=Backbone.View.extend({
                       : "vertical";
      this.model.set({orientation:orientation});
      if(orientation=="horizontal"){
-       window.location="#slide/"+this.model.Slides.get('slide');;
+       window.location="#slides/"+this.model.Slides.get('slide');;
      }else{
        window.location="#screens/"+this.model.Screens.get('slide');
      }
   }
   , render:function(){
-    $(this.el).append(this.model.Slides.view.render())
-              .append(this.model.Screens.view.render())
+    $(this.el).append(this.model.Slides.view.render().el)
+              .append(this.model.Screens.view.render().el)
     return this;
   }
 });
