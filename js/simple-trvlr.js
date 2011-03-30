@@ -121,11 +121,21 @@ SlideView = Backbone.View.extend({
     if(this.model.Deck.get("slide")==this.model.get("number")){
      var targetH=0;
      if(navigator.userAgent.match(/iphone/i)){
-        targetH=slideshow.get("orientation")=="vertical"?416:268;
+        var H=slideshow.get("orientation")=="vertical"?416:268;
+        this.$('img').css({height:H});
      }else{
-        targetH=$(window).height();
+       var targetH=$(window).height();
+       var sf=(targetH/this.model.Deck.get('height'));
+       var targetW=sf*this.model.Deck.get('width'); 
+       var windowW=$(window).width();
+       //check won't be wider than window
+       if(targetW<windowW){
+         var cssUpdate={height:targetH};
+       }else{
+         var cssUpdate={width:windowW-20};
+       }
+       this.$('img').css(cssUpdate);
      }
-     this.$('img').css({height:targetH});
     }
   }
   ,render:function(){
