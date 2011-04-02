@@ -124,15 +124,16 @@ SlideView = Backbone.View.extend({
         var H=slideshow.get("orientation")=="vertical"?416:268;
         this.$('img').css({height:H});
      }else{
-       var targetH=$(window).height();
-       var sf=(targetH/this.model.Deck.get('height'));
+       var imgH=this.model.Deck.get('height');
+       var targetH=Math.min(imgH*1,$(window).height());
+       var sf=(targetH/imgH);
        var targetW=sf*this.model.Deck.get('width'); 
        var windowW=$(window).width();
        //check won't be wider than window
        if(targetW<windowW){
-         var cssUpdate={height:targetH};
+         var cssUpdate={height:targetH,width:""};
        }else{
-         var cssUpdate={width:windowW-20};
+         var cssUpdate={width:windowW-20,height:""};
        }
        this.$('img').css(cssUpdate);
      }
